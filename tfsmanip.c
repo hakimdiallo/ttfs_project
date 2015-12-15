@@ -1,51 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <endian.h>
 #include "ll.h"
 
 
 error read_physical_block(disk_id id,block b,uint32_t num){
-	error e;
-	if( id != NULL){
-		uint32_t i;
-		for(i=0; i<id.nbblocks; i++){
-			if( i == num ){
-				b = id.blocks[i];
-				e.err = NO_ERROR;
-				break;
-			}
+	if( id != -1){
+		unsigned char buf[MAX_BLOCK_SIZE];
+		if( lseek(id,MAX_BLOCK_SIZE*num,SEEK_SET) == -1 ){
+			return -1;
 		}
+		if( read(id,buf,MAX_BLOCK_SIZE) == -1 ){
+			return -1;
+		}
+		if( memcpy(b,buf,MAX_BLOCK_SIZE) == NULL ){
+			return -1;
+		}
+		return 0;
 	}
-	return e;
+	return -1;
 }
 
 error write_physical_block(disk_id id,block b,uint32_t num){
-	error e;
-	if( id != NULL){
-		uint32_t i;
-		for(i=0; i<id.nbblocks; i++){
-			if( i == num ){
-				id.blocks[i] = b;
-				e.err = NO_ERROR;
-				break;
-			}
+	if( id != -1){
+		if( lseek(id,MAX_BLOCK_SIZE*num,SEEK_SET) == -1 ){
+			return -1;
 		}
+
+		if( write(id,b,MAX_BLOCK_SIZE) == -1 ){
+			return -1;
+		}
+		return 0;
 	}
-	return e;
+	return -1;
 }
 
+/************** Fontions de manipulation visibles par les couches superieurs **************************/
+
 error start_disk(char *name,disk_id *id){
-	error e;
-	if( ( id->fd = open(name,O_RDWR,S_IRWXU) ) == -1 ){
+	if( ( *id = open(name,O_RDWR,S_IRWXU) ) == -1 ){
 		perror("Error");
-	}else {
-		// lire le fichier et mettre à jour le nombre de blocs id->nbblocks
-		if(/*read(fd) get the number of blocks wrong?*/){
-		
-		}else {
-			//lire pour parcourir les blocks ....
-		}
+		return -1;
 	}
-	return e;
+	return 0;
 }
 
 error read_block(disk_id id,block b,uint32_t num){
@@ -57,13 +59,10 @@ error write_block(disk_id id,block b,uint32_t num){
 }
 
 error sync_disk(disk_id id){
-	error e;
-	return e;
+	return 0;
 }
 
 error stop_disk(disk_id id){
-	error e;
-	if(close(id.id) == 0)
-		e.err = NO_ERROR;
-	return e;
+	return close(id);
 }
+
