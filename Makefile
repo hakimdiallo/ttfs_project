@@ -1,13 +1,16 @@
 CC = gcc
-CFLAGS = -Wall
-LDFLAGS = -shared -fPIC
+FLAGS = -fPIC	
+CFLAGS = -fPIC -Wall
+LDFLAGS = -shared
 EXECS = tfs_create tfs_partition tfs_analyze
 TARGET = libll.so
-SOURCES = $(shell echo *.c)
-HEADERS = $(shell echo *.h)
+SOURCES = $(wildcard *.c)
+HEADERS = $(wildcard *.h)
+LIBNAME = ll
 OBJECTS = $(SOURCES:.c=.o)
 
-all: $(TARGET)
+all: $(OBJECTS)
+
 
 tfs_create: tfs_create.o
 	$(CC) -o tfs_create tfs_create.c
@@ -18,14 +21,15 @@ tfs_partition: tfs_partition.o
 tfs_analyze:	tfs_analyze.o
 	$(CC) -o tfs_analyze tfs_analyze.c
 
-#$(EXECS): $(OBJECTS)
-#	$(CC) -o $@ $^
+lib:	$(TARGET)
+
+intall: $(EXECS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+	$(CC) -shared -Wl,-soname,$(TARGET) -o $(OBJECTS) $(CFLAGS)
 
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $<
+%.o:	%.c
+	$(CC) -o $@	-c $< $(CFLAGS)
 	
 
 

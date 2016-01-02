@@ -27,6 +27,5 @@ error stop_disk(disk_id id); //qui permet de terminer une session de travail sur
 /**********************************************************/
 // Commandes de l'API
 uint32_t little_endian_to_u32(uint32_t a);
-int tfs_create(int argc, char* argv[]);
-int tfs_partition(int argc, char* argv[]);
-int tfs_analyze(int argc, char *argv[]);
+
+
