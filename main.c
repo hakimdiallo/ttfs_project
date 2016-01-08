@@ -37,8 +37,7 @@ void read_command(char* argl) {
     if (fgets(argl, MAXLIN - 1, stdin) == NULL) {
         // Si l'utilisateur tape Ctrl+D,
         // on interprète ceci comme "exit".
-        strcpy(argl, "exit");
-        printf("exit\n");
+        exit(0);
     } 
 }
 

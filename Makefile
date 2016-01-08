@@ -1,6 +1,6 @@
 CC = gcc
 FLAGS = -fPIC	
-CFLAGS = -fPIC -Wall
+CFLAGS = -Wall
 LDFLAGS = -shared
 EXEC = tfs_console
 TARGET = libll.so
@@ -9,22 +9,27 @@ HEADERS = $(wildcard *.h)
 LIBNAME = ll
 OBJECTS = $(SOURCES:.c=.o)
 
-all: $(OBJECTS)
+all: $(EXEC)
 
-#lib:	$(TARGET)
+lib: $(TARGET)
 
-lib: $(OBJECTS)
+$(TARGET): $(OBJECTS)
+	$(CC) -shared $(FLAGS) $(OBJECTS) -o $(TARGET)
+	export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+	
+update-lib: $(OBJECTS)
 	$(CC) -shared -Wl,-soname,lib$(LIBNAME).so -o $(EXEC) $(CFLAGS)
 
-$(EXEC): $(OBJECTS)
+$(EXEC): $(TARGET)
 	$(CC) -o $@ $^
 
 %.o:	%.c $(HEADERS)
-	$(CC) -o $@	-c $< $(CFLAGS)
+	$(CC) -o $@	-c $(FLAGS) $< $(CFLAGS)
 	
 clean:
 	rm -f $(OBJECTS)
 	rm -f *~
 
 mrproper: clean
-	rm -f $(EXEC)
+	rm -f $(EXEC) 
+	rm -f $(TARGET)
