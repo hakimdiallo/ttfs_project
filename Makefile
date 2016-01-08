@@ -9,12 +9,12 @@ HEADERS = $(wildcard *.h)
 LIBNAME = ll
 OBJECTS = $(SOURCES:.c=.o)
 
-all: $(EXEC)
+all: $(OBJECTS)
 
 #lib:	$(TARGET)
 
 lib: $(OBJECTS)
-	$(CC) -shared -Wl,-soname,$(TARGET) -o $(EXEC) $(CFLAGS)
+	$(CC) -shared -Wl,-soname,lib$(LIBNAME).so -o $(EXEC) $(CFLAGS)
 
 $(EXEC): $(OBJECTS)
 	$(CC) -o $@ $^
