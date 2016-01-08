@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 
 
 int tfs_mkdir(const char *path, mode_t mode){
