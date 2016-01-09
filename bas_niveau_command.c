@@ -8,16 +8,6 @@
 #include <endian.h>
 #include "ll.h"
   
-//============= Tranforme un uint32 little endian en uint32 normal ===========================
-// 
-uint32_t little_endian_to_u32(uint32_t a)
-{
-  uint8_t l[4];
-  
-  *(uint32_t *) l = a;
- 
-  return 256*256*256*l[3] + 256*256*l[2] + 256*l[1] + l[0];
-}
 
 //============== Cree une un disque avec un le nombre de bloc donne ==========================
 //
@@ -36,31 +26,42 @@ int tfs_create(int argc, char* argv[]){
 				return -1;
 			}
 		}
-		int fd;
+		
+		int nb_blocks = atoi(argv[2]);
+		if( nb_blocks <= 0 ){
+			printf("Invalid size of disk.\n");
+			return -1;
+		}
+		
+		disk_id fd;
 		if( (fd = open(strcat(name,".tfs"), O_WRONLY|O_CREAT, S_IRWXU)) == -1 ){
 			perror("Error");
 			return -1;
 		}
-		else {
-			uint32_t n = htole32((uint32_t)atoi(argv[2]));
-			if( write(fd,(unsigned char *)&n,sizeof(uint32_t)) == -1 ){
+		block b;
+		int i;
+		
+		b[0] = (uint32_t)nb_blocks;
+		for(i=1; i<BLOCK_LENGTH-1; i++){
+			b[i] = 0;
+		}
+		
+		for(i=0; i<nb_blocks; i++){
+			if( write_block(fd,b,i) == -1 ){
 				return -1;
 			}
-			uint32_t i;
-			n = htole32(0);
-			for(i=0;i<(MAX_BLOCK_SIZE/4)-1;++i){
-				if( write(fd,(unsigned char *)&n,sizeof(uint32_t)) == -1 ){
-					return -1;
-				}
-			}
-			if( close(fd) == -1 ){
-				return -1;
-			}
+			if(i==0)
+				b[0] = 0;			
+		}
+		
+			
+		if( close(fd) == -1 ){
+			return -1;
 		}
 	} else {
-		printf("Invalid command:\ntfs_create -p size [name]\n");
+		printf("Invalid command: tfs_create -s size [name]\n");
 	}
-	return 0;
+	return -1;
 }
 
 //======== partitionne un disque ne nombre de partion donne avec pour chacun sa taille =============
@@ -82,40 +83,53 @@ int tfs_partition(int argc, char* argv[]){
 			if( (argc-2) % 2 != 0 )
 				return -1;
 		 	np = (argc-2)/2;
-		 	if( strcpy(name,"disk.tfs") == NULL ){
+		 	if( strcpy(name,argv[argc-1]) == NULL ){
 		 		perror("");
 				return -1;
 			}
 		}
-		int fd;
-		printf("File name: %s\n",name);
-		if( (fd = open(name, O_WRONLY, S_IRWXU)) == -1 ){
-			perror("Error File name: ");
+		disk_id fd;
+		if( start_disk(name,&fd) == -1 ){
+			perror(" ");
 			return -1;
 		}
-		printf("1\n");
-		if( lseek(fd,sizeof(uint32_t),SEEK_SET) == -1 ){
-			perror("lseek: ");
+		
+		block b;
+		if( read_block(fd,b,0) == -1 )
 			return -1;
+
+		int i;
+		if( b[1] != 0 ){
+			for(i=2; i<=b[1]; i++)
+				b[i] = 0;
 		}
-		printf("%d\n",fd);
-		uint32_t n = htole32(np);
-		if( write(fd,(unsigned char *)&n,sizeof(uint32_t)) == -1 ){
-			perror("Error write ");
-			return -1;
-		}
-		uint32_t i = 2;
-		while( i <= (np * 2) ){
-			uint32_t m = htole32((uint32_t)atoi(argv[i]));
-			if( write(fd,(unsigned char *)&m,sizeof(uint32_t)) == -1 ){
-				perror("");
+		
+		int sum = 0;
+		b[1] = np;
+		int k = 2;
+		for(i=2; i <= (np * 2); i+=2){
+			int nbp = atoi(argv[i]);
+			if( nbp <= 0 ){
+				printf("Error negative or null partition\n");
 				return -1;
 			}
-			i+=2;
+			b[k++] = ((uint32_t)nbp);
+			sum += nbp;
 		}
+		
+		if( sum > b[0] ){
+			printf("Invalid size of partitions\n");
+			return -1;
+		}
+		
+		if( write_block(fd,b,0) == -1 )
+			return -1;
+			
+		if( stop_disk(fd) == -1 )
+			return -1;
 	} 
 	else {
-		printf("Invalid command:\ntfs_partition -p size [-p size]... [name]\n");
+		printf("Invalid command: tfs_partition -p size [-p size]... [name]\n");
 	}
 	return 0;
 }
@@ -137,24 +151,35 @@ int tfs_analyse(int argc, char *argv[]){
 				return -1;
 			}
 		}
-		int fd;
-		if( (fd = open(name,O_RDONLY,S_IRWXU)) == -1 ){
+		disk_id fd;
+		if( start_disk(name,&fd) == -1 ){
 			perror("");
 			return -1;
 		}
-		unsigned char tmp[255];
-		printf("1111\n");
-		while( read(fd,tmp,sizeof(uint32_t)) == 0 ){
-			printf("1111\n");
-			printf("%d\n", little_endian_to_u32(*tmp));
+		
+		block b;
+		if(read_block(fd,b,0) == -1)
+			return -1;
+		
+		printf("Nombre de block: %d\n",b[0]);
+		uint32_t n = b[1];
+		if(n == 0){
+			printf("Nombre de partition: %d\n",n);
+		} 
+		else {
+			printf("Nombre de partition: %d\n",n);
+			int i;
+			for(i=2; i<=n+1; i++){
+				printf("Partition %d taille: %d\n",i-1,b[i]);
+			}
 		}
-		printf("ssssss %s",tmp);
-		if( close(fd) == -1 )
+		
+		if( stop_disk(fd) == -1 )
 			perror("");
 			return -1;
 	} 
 	else {
-		printf("Invalid command:\ntfs_analyze [name]\n");
+		printf("Invalid command: tfs_analyze [name]\n");
 	}
 	return 0;
 }

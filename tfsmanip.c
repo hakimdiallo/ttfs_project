@@ -9,17 +9,30 @@
 #include "ll.h"
 
 
+//============= Tranforme un uint32 little endian en uint32 normal ===========================
+// 
+uint32_t little_endian_to_u32(uint32_t a)
+{
+  uint8_t l[4];
+  
+  *(uint32_t *) l = a;
+ 
+  return 256*256*256*l[3] + 256*256*l[2] + 256*l[1] + l[0];
+}
+
 error read_physical_block(disk_id id,block b,uint32_t num){
 	if( id != -1){
-		unsigned char buf[MAX_BLOCK_SIZE];
+		//unsigned char buf[MAX_BLOCK_SIZE];
 		if( lseek(id,MAX_BLOCK_SIZE*num,SEEK_SET) == -1 ){
 			return -1;
 		}
-		if( read(id,buf,MAX_BLOCK_SIZE) == -1 ){
-			return -1;
-		}
-		if( memcpy(b,buf,MAX_BLOCK_SIZE) == NULL ){
-			return -1;
+		uint32_t *buf = malloc(sizeof(uint32_t));
+		int i;
+		for(i=0; i < BLOCK_LENGTH; i++){
+			if( read(id,buf,sizeof(uint32_t)) == -1 ){
+				return -1;
+			}
+			b[i] = little_endian_to_u32(*buf);
 		}
 		return 0;
 	}
@@ -31,9 +44,12 @@ error write_physical_block(disk_id id,block b,uint32_t num){
 		if( lseek(id,MAX_BLOCK_SIZE*num,SEEK_SET) == -1 ){
 			return -1;
 		}
-
-		if( write(id,b,MAX_BLOCK_SIZE) == -1 ){
-			return -1;
+		int i;
+		for(i=0; i < BLOCK_LENGTH; i++){
+			uint32_t buf = htole32(b[i]);
+			if( write(id,&buf,sizeof(uint32_t)) == -1 ){
+				return -1;
+			}
 		}
 		return 0;
 	}

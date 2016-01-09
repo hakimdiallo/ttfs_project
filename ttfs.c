@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <unistd.h>
 
 
 int tfs_mkdir(const char *path, mode_t mode){
@@ -23,8 +24,10 @@ ssize_t tfs_read(int fildes,void *buf,size_t nbytes);
 
 ssize_t tfs_write(int fildes,void *buf,size_t nbytes);
 
-int tfs_close(fildes){
-	return close(fildes);
+int tfs_close(int fildes){
+	if(close(fildes) == -1)
+		return 1;
+	return 0;
 }
 
 off_t tfs_lseek(int fildes,off_t offset,int whence);

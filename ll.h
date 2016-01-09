@@ -20,10 +20,12 @@ int execute_command(int argc, char** argv);
 
 #define MAX_BLOCK_SIZE 1024
 
+#define BLOCK_LENGTH 256 // 1024/4 //4 representant 4 octets
+
 #define NO_ERROR 0
 #define ERROR -1
 
-typedef unsigned char block[MAX_BLOCK_SIZE];
+typedef uint32_t block[BLOCK_LENGTH];
 
 typedef int disk_id;
 
