@@ -15,13 +15,14 @@ lib: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	$(CC) -shared $(FLAGS) $(OBJECTS) -o $(TARGET)
-	export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+#	export LD_LIBRARY_PATH=.:LD_LIBRARY_PATH
+
 	
 #update-lib: $(OBJECTS)
 #	$(CC) -Wl,-soname, $(TARGET) -o $(TARGET) $(CFLAGS)
 
 $(EXEC): $(TARGET)
-	$(CC) -o $@ $^
+	$(CC) -o $@ -L. $^
 
 %.o:	%.c $(HEADERS)
 	$(CC) -o $@	-c $(FLAGS) $< $(CFLAGS)
